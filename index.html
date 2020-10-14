@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Wealth & Health of Nations</title>
+        <style>
+        </style>
+        <script type="text/javascript" src="http://d3js.org/d3.v6.min.js"></script>
+        <link rel="stylesheet" href="style.css">
+            <!-- Milligram CSS -->
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.css">
+        <!-- <script type="text/javascript" src="../d3.js"></script> -->
+    </head>
+    <body>
+        <h1> Wealth & Health of Nations </h1>  
+        <h4>Inspired by Hans Rosling's Gapminder</h4>
+
+        <div class="chart"></div>
+        <div class="tooltip">
+            <!-- you will programmatically insert tooltip info here-->
+         </div>
+        
+
+    </body>
+
+            <script type="text/javascript">
+                var countries;
+                d3.csv('wealth-health-2014.csv', d3.autoType).then(data=>{
+                    
+                    countries = data; 
+                    const margin = {top: 50, right: 20, bottom: 20, left: 100}
+                    const width = 700 - margin.left - margin.right;
+                    const height = 700 - margin.top - margin.bottom;
+
+                    console.log(countries.columns, countries[0]);
+                    console.log('countries', countries);
+
+                    const svg = d3.select('.chart').append('svg')
+                                .attr("width", width + margin.left + margin.right)
+                                .attr("height", height + margin.top + margin.bottom)
+                                .append("g")
+                                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+                    const xScale = d3.scaleLog()
+                                    .domain(d3.extent(countries, d=>d.Income))
+                                    .range([0, width]);
+
+                    const yScale = d3.scaleLog()
+                                    .domain(d3.extent(countries, d=>d.LifeExpectancy))
+                                    .range([height, 0])                       
+
+                    const xAxis = d3.axisBottom()
+                        .scale(xScale)
+                        .ticks(5, "s")
+                    
+                    const yAxis = d3.axisLeft()
+                        .scale(yScale)
+                        .ticks(10, "s");    
+
+                    const colorScale =  d3.scaleOrdinal()
+                        .range(d3.schemeCategory10);
+
+                    const PopulationMin = d3.min(data, d=>d.Population), 
+                           PopulationMax = d3.max(data, d=>d.Population);
+
+                    const PopulationScale = d3.scaleLinear()
+                        .domain([PopulationMin, PopulationMax])
+                        .range([5, 30]);
+
+                    svg.append("g")
+                        .attr("class", "axis x-axis")
+                        .call(xAxis)
+                        .attr("transform", `translate(0, ${height})`);   
+
+                    svg.append("g")
+                        .attr("class", "axis y-axis")
+                        .call(yAxis)
+                        .attr("transform", `translate(0 , 0)`);
+
+                    svg.append("text")
+                        .attr('x', width - margin.left - margin.right + 70)
+                        .attr('y', height + margin.top + margin.bottom - 80)
+                        .text("Income")  
+                        .attr("font-weight",function(d,i) {return i*100})
+                        .attr("font-size", "13px")
+                        
+                    svg.append("text")
+                        .attr('x', width - margin.left - margin.right - 450)
+                        .attr('y', height - 640)
+                        .attr('text-anchor', 'front')
+                        .text("Life Expectancy")
+                        .attr("transform", d => "rotate(90)")
+                        .attr("font-size", "13px")
+                        .attr("font-weight", function(d,i) {return i*100})
+
+                    svg.selectAll('.chart')
+                        .data(countries)
+                        .enter()
+                        .append('circle')
+                        .attr('fill', d=>colorScale(d.Region))
+                        .attr('stroke', 'black')
+                        .attr('opacity', 0.7)
+                        .attr('class', 'income')
+                        .attr('r', d=> PopulationScale(d.Population))
+                        .attr('cx', d=> xScale(d.Income))
+                        .attr('cy', d=> yScale(d.LifeExpectancy))
+                        .attr("opacity", 0.5)
+                        .on("mouseenter", (event, d) => {
+                            const pos = d3.pointer(event, window);
+                            d3.select(".tooltip")
+                                // show the tooltip
+                                .style('display', 'block')
+                                .style("left", pos[0] + 40 + "px")
+                                .style("top", pos[1] + 40 + "px")
+                                .html(
+                                    "Country: " + d.Country + "<br>" +
+                                    "Region: " + d.Region + "<br>" +
+                                    "Population: " + d.Population + "<br>" +
+                                    "Income: " + d.Income + "<br>" +
+                                    "Life Expectancy: " + d.LifeExpectancy)
+                            })
+                        .on("mouseleave", (event, d) => {
+                            //hide tooltip 
+                            d3.select('.tooltip').style('display', 'none')
+                        })
+
+                        const legend = svg.selectAll("legend")
+                            .data(colorScale.domain())
+                            .enter()
+                            .append('rect')
+                            .attr('x', 370)
+                            .attr('y', (d,i) => i * 24 + 450)
+                            .attr("height", 15)
+                            .attr("width", 15)
+                            .attr('fill', d=>colorScale(d))
+                            .attr('stroke', d=>colorScale(d))
+
+                        svg.selectAll("labels")
+                            .data(colorScale.domain())
+                            .enter()
+                            .append('text')
+                            .attr('x', 400)
+                            .attr('y', (d,i) => i * 24 + 460)
+                            .text(function(d) { return d; })
+                        });
+            </script>
+
+
+    </body>
+</html>
